@@ -207,8 +207,6 @@ class Int20Dataset(Dataset):
         else:
             self.data = pd.read_csv(os.path.join(os.path.join(data_path, 'data_label'), dataset_name+'_test.csv'))
         
-        
-        
         self.train_labels = self.data.iloc[:, 1].tolist()
         self.train_noisy_labels, self.actual_noise_rate = noisify(train_labels=self.train_labels, noise_type=noise_type, noise_rate=noise_rate)
         # self.train_noisy_labels = [i[0] for i in self.train_noisy_labels]
@@ -217,7 +215,24 @@ class Int20Dataset(Dataset):
         if torch.is_tensor(index):
             index = index.tolist()
         img_name = self.data.iloc[index, 0]
-        img = io.imread(img_name) 
+         
+        
+        img = self.read_img(img_name)
+        # img = io.imread(img)
+        img = np.array(img)
+        crop_size = 288
+        h1 = (img.shape[0] - crop_size) /2
+        h1 = int(h1)
+        h2 = (img.shape[0] + crop_size) /2
+        h2 = int(h2)
+        
+        w1 = (img.shape[1] - crop_size) /2
+        w1 = int(w1)
+        w2 = (img.shape[1] + crop_size) /2
+        w2 = int(w2)
+        img = img[h1:h2,w1:w2, :]
+        
+        
         # label = self.data.iloc[index, 1]
         label = self.train_noisy_labels[index]
         label = torch.tensor(label)
@@ -226,6 +241,16 @@ class Int20Dataset(Dataset):
         return img, label
     def __len__(self):
         return len(self.data)    
+    def read_img(self, path):
+        img = Image.open(path)
+        # print('image mode:', img.mode)
+        if img.mode == 'CMYK':
+            img = img.convert('RGB')    
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')    
+        #img = np.array(img)
+        #print('RGB img:', img.shape, img.min(), img.max())
+        return img
         
 
 if __name__=='__main__':

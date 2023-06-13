@@ -26,13 +26,13 @@ parser.add_argument('--public_dataset_length', type = int, default = 5000, help 
 parser.add_argument('--private_dataset_name', type = str, default = 'matek19', help = 'Name of private dataset')
 parser.add_argument('--private_dataset_path', type = str, default = 'matek19', help = 'Directory of private dataset')
 parser.add_argument('--private_dataset_length', type = int, default = 3000, help = 'Length of private dataset')
-parser.add_argument('--number_of_clients', type = int, default = 4, help = 'Total nodes to which dataset is divided')
+parser.add_argument('--number_of_clients', type = int, default = 3, help = 'Total nodes to which dataset is divided')
 parser.add_argument('--batch_size', type = int, default = 16, help = 'Training batch size')
-parser.add_argument('--communication_epochs', type = int, default = 2, help = 'Communication rounds for collaborative learning')
+parser.add_argument('--communication_epochs', type = int, default = 40, help = 'Communication rounds for collaborative learning')
 parser.add_argument('--noise_type', type = str, default = 'No', choices = ['pair', 'symmetric', 'No'], help = 'Noise type to be added')
-parser.add_argument('--noise_rate', type = float, default = 0, help = 'Noise rate')
-parser.add_argument('--total_private_samples', type = int, default = 15000, help = 'Total private samples')
-parser.add_argument('--fl_type', type = str, default = 'heterogeneous', choices = ['heterogeneous', 'homogeneous'], help = 'Type of FL, either heterogeneous or homogeneous')
+parser.add_argument('--noise_rate', type = float, default = 0, help = 'Noise rate', choices = [0, 0.1, 0.2])
+parser.add_argument('--total_private_samples', type = int, default = 13000, help = 'Total private samples')
+parser.add_argument('--fl_type', type = str, default = 'homogeneous', choices = ['heterogeneous', 'homogeneous'], help = 'Type of FL, either heterogeneous or homogeneous')
 parser.add_argument('--client_confidence_reweight_loss', type = str, default = 'SCE', choices=['SCE', 'CE'])
 parser.add_argument('--number_of_classes', type = int, default = 13, help = 'Total number of classes in dataset')
 parser.add_argument('--optimizer_name', type=str, default = 'Adam', help = 'Optimizer method')
@@ -79,10 +79,11 @@ if __name__ =='__main__':
     col_loss_list = []
     local_loss_list = []
     acc_list = []
-    for epoch_index in range(args.communication_epochs):
+    for epoch_index in range(args.communication_epochs):        
         for participant_index in range(args.number_of_clients):
             network = net_list[participant_index]
-            network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            # network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            network = network.to(device)
         
         # Calculate Client Confidence with label quality and model performance
         amount_with_quality = [1 / (args.number_of_clients - 1) for i in range(args.number_of_clients)]
@@ -93,7 +94,8 @@ if __name__ =='__main__':
         current_mean_loss_list = []
         for participant_index in range(args.number_of_clients):
             network = net_list[participant_index]
-            network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            # network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            network = network.to(device)
             network.train()
             private_dataidx = net_dataidx_map[participant_index]
             train_dl_local = get_data_loader(args.data_path, args.private_dataset_name, train = True, noise_type = args.noise_type, noise_rate = args.noise_rate, data_indices = private_dataidx)
@@ -104,6 +106,7 @@ if __name__ =='__main__':
             criterion.to(device)
             participant_loss_list = []
             for batch_idx, (images, labels) in enumerate(train_dl_local):
+                # print(' loop 3, client : ', participant_index, ', epoch: ', batch_idx+1)
                 images = images.to(device)
                 labels = labels.to(device)
                 private_linear_output, _ = network(images)
@@ -128,14 +131,16 @@ if __name__ =='__main__':
         weight_with_quality = torch.tensor(weight_with_quality)
         
         # training on public dataset
-        for batch_idx, (images, _) in enumerate(public_train_dl):
+        for batch_idx, (images, _) in enumerate(public_train_dl):            
             linear_output_list = []
             linear_output_target_list = []
             kl_loss_batch_list = []
             # Calculate Linear Output
             for participant_index in range(args.number_of_clients):
+                print('public data, client: ', participant_index+1, ', epoch: ', batch_idx+1)
                 network = net_list[participant_index]
-                network = nn.DataParallel(network, device_ids=device_ids).to(device)
+                # network = nn.DataParallel(network, device_ids=device_ids).to(device)
+                network = network.to(device)
                 network.train()
                 images = images.to(device)
                 linear_output,_ = network(x=images)
@@ -145,7 +150,7 @@ if __name__ =='__main__':
                 linear_output_list.append(linear_output_logsoft)
             
             # Update Participants' Models via KL Loss and Data Quality
-            local_loss_batch_list = []
+            local_loss_batch_list = []            
             for participant_index in range(args.number_of_clients):
                 network = net_list[participant_index]
                 network = nn.DataParallel(network, device_ids=device_ids).to(device)
@@ -169,7 +174,8 @@ if __name__ =='__main__':
         local_loss_batch_list = []
         for participant_index in range(args.number_of_clients):
             network = net_list[participant_index]
-            network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            # network = nn.DataParallel(network, device_ids=device_ids).to(device)
+            network = network.to(device)
             network.train()
             private_dataidx = net_dataidx_map[participant_index]
             train_dl_local = get_data_loader(args.data_path, args.private_dataset_name, train = True, noise_type = args.noise_type, noise_rate = args.noise_rate, data_indices = private_dataidx)
@@ -185,14 +191,15 @@ if __name__ =='__main__':
             for participant_index in range(args.number_of_clients):
                 test_dl = get_data_loader(args.data_path, args.private_dataset_name, train = True, noise_type = args.noise_type, noise_rate = args.noise_rate, data_indices = private_dataidx)
                 network = net_list[participant_index]
-                network = nn.DataParallel(network, device_ids=device_ids).to(device)
+                # network = nn.DataParallel(network, device_ids=device_ids).to(device)
+                network = network.to(device)
                 accuracy = evaluate_network(network, test_dl, device)
                 acc_epoch_list.append(accuracy)
             acc_list.append(acc_epoch_list)
             accuracy_avg = sum(acc_epoch_list) / args.number_of_clients
-        print('accuracy_avg: ', accuracy_avg)
-    acc_array = np.array(acc_list)
-    np.save('accuracy.npy', acc_array)
+            print('accuracy_avg: ', accuracy_avg)
+            acc_array = np.array(acc_list)
+            np.save(args.fl_type+'_'+args.noise_type+'_'+args.noise_rate+'_accuracy.npy', acc_array)
             
             
             

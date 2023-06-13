@@ -30,7 +30,7 @@ def init_nets(n_parties,nets_name_list):
     return nets_list
 
 class SCELoss(torch.nn.Module):
-    def __init__(self, alpha, beta, num_classes=10):
+    def __init__(self, alpha, beta, num_classes=13):
         super(SCELoss, self).__init__()
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.alpha = alpha
@@ -57,7 +57,7 @@ def update_model_with_private_data(network, private_epoch, private_dataloader, l
     if loss_function =='CE':
         criterion = nn.CrossEntropyLoss()
     if loss_function =='SCE':
-        criterion = SCELoss(alpha=0.1, beta=1.0, num_classes=10)
+        criterion = SCELoss(alpha=0.1, beta=1.0, num_classes=13)
 
     if optimizer_method =='Adam':
         optimizer = optim.Adam(network.parameters(),lr=learing_rate)
