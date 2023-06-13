@@ -70,7 +70,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=13):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -81,7 +81,8 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        # self.linear = nn.Linear(512*block.expansion, num_classes)
+        self.linear = nn.Linear(8192*block.expansion, num_classes)
 
         self.backbone = nn.Sequential(
             self.conv1,
@@ -91,11 +92,13 @@ class ResNet(nn.Module):
             self.layer2,
             self.layer3,
             self.layer4,
-            nn.AvgPool2d(kernel_size=4)
+            # nn.AvgPool2d(kernel_size=4)
+            nn.AdaptiveAvgPool2d((4,4))
         )
 
         # projector 2 layer
-        sizes = [512*block.expansion,1024,1024,1024]
+        # sizes = [512*block.expansion,1024,1024,1024]
+        sizes = [8192*block.expansion,1024,1024,1024]
         layers = []
         for i in range(len(sizes) - 2):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
@@ -115,17 +118,22 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        # print(' 1 shape: ', x.shape)
         out = self.backbone(x)
+        # print(' 2 shape: ', out.shape)
         out = out.view(out.size(0), -1)
+        # print(' 3 shape: ', out.shape)
         linear_output = self.linear(out)
+        # print(' 4 shape: ', linear_output.shape)
         embedding_output = self.bn_projector(out)
+        # print(' 5 shape: ', embedding_output.shape)
         return linear_output, embedding_output
 
 
-def ResNet10(num_classes=10):
+def ResNet10(num_classes=13):
     return ResNet(BasicBlock, [1, 1, 1, 1],num_classes)
 
-def ResNet12(num_classes=10):
+def ResNet12(num_classes=13):
     return ResNet(BasicBlock, [2, 1, 1, 1],num_classes)
 
 def ResNet18():
