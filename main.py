@@ -137,7 +137,7 @@ if __name__ =='__main__':
             kl_loss_batch_list = []
             # Calculate Linear Output
             for participant_index in range(args.number_of_clients):
-                print('public data, client: ', participant_index+1, ', epoch: ', batch_idx+1)
+                print('global round: ', epoch_index+1, ', public data, client: ', participant_index+1, ', epoch: ', batch_idx+1)
                 network = net_list[participant_index]
                 # network = nn.DataParallel(network, device_ids=device_ids).to(device)
                 network = network.to(device)
