@@ -23,7 +23,7 @@ import torch
 def get_data_loader(data_path, public_dataset_name, train, noise_type, noise_rate, data_indices = None):
     transform = transforms.Compose([transforms.ToTensor()])
     dataset = Int20Dataset(transform, data_path, public_dataset_name, train = train, noise_type=noise_type, noise_rate=noise_rate, data_indices = data_indices)
-    dataLoader = torch.utils.data.DataLoader(dataset, batch_size=16, num_workers= 4)
+    dataLoader = torch.utils.data.DataLoader(dataset, batch_size=16, num_workers= 4, drop_last=True)
     return dataLoader
 
 def load_data(data_path, dataset_name, noise_type=None, noise_rate=0):
