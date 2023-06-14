@@ -60,10 +60,12 @@ class ShuffleNet(nn.Module):
         self.layer1 = self._make_layer(out_planes[0], num_blocks[0], groups)
         self.layer2 = self._make_layer(out_planes[1], num_blocks[1], groups)
         self.layer3 = self._make_layer(out_planes[2], num_blocks[2], groups)
-        self.linear = nn.Linear(out_planes[2], 10)
+        # self.linear = nn.Linear(out_planes[2], 13)   # out_planes[2] = 960
+        self.linear = nn.Linear(12800, 13)
 
         # projector 2 layer
-        sizes = [out_planes[2],1024,1024,1024]
+        # sizes = [out_planes[2],1024,1024,1024]
+        sizes = [12800,1024,1024,1024]
         layers = []
         for i in range(len(sizes) - 2):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
@@ -80,7 +82,8 @@ class ShuffleNet(nn.Module):
             self.layer1,
             self.layer2,
             self.layer3,
-            nn.AvgPool2d(kernel_size=4)
+            # nn.AvgPool2d(kernel_size=4)
+            nn.AdaptiveAvgPool2d((4,4))
         )
 
     def _make_layer(self, out_planes, num_blocks, groups):
