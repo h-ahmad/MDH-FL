@@ -199,7 +199,7 @@ if __name__ =='__main__':
             accuracy_avg = sum(acc_epoch_list) / args.number_of_clients
             print('accuracy_avg: ', accuracy_avg)
             acc_array = np.array(acc_list)
-            np.save(args.fl_type+'_'+args.noise_type+'_'+args.noise_rate+'_accuracy.npy', acc_array)
+            np.save(str(args.fl_type)+'_'+str(args.noise_type)+'_'+str(args.noise_rate)+'_accuracy.npy', acc_array)
             
             
             
