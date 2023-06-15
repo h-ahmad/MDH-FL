@@ -141,14 +141,14 @@ def multiclass_noisify(y, P, random_state=0):
     assert (P >= 0.0).all()
     m = y.shape[0]
     new_y = y.copy()
-    flipper = np.random.RandomState(random_state)
+    flipper = np.random.RandomState(random_state) # RandomState(MT19937)
     for idx in np.arange(m):
         i = y[idx]
         flipped = flipper.multinomial(1, P[i, :][0], 1)[0]
         new_y[idx] = np.where(flipped == 1)[0]
     return new_y
 
-def noisify_pairflip(y_train, noise, random_state=None, nb_classes=10):
+def noisify_pairflip(y_train, noise, random_state=None, nb_classes=13):
     """mistakes:
         flip in the pair
     """
@@ -166,7 +166,7 @@ def noisify_pairflip(y_train, noise, random_state=None, nb_classes=10):
         y_train = y_train_noisy
     return y_train, actual_noise
 
-def noisify_multiclass_symmetric(y_train, noise, random_state=None, nb_classes=10):
+def noisify_multiclass_symmetric(y_train, noise, random_state=None, nb_classes=13):
     P = np.ones((nb_classes, nb_classes))
     n = noise
     P = (n / (nb_classes - 1)) * P
@@ -184,8 +184,10 @@ def noisify_multiclass_symmetric(y_train, noise, random_state=None, nb_classes=1
 
 def noisify(nb_classes=13, train_labels=None, noise_type=None, noise_rate=0):
     if noise_type == 'pairflip':
+        train_labels = np.array(train_labels)
         train_noisy_labels, actual_noise_rate = noisify_pairflip(train_labels, noise_rate, random_state=0, nb_classes=nb_classes)
     if noise_type == 'symmetric':
+        train_labels = np.array(train_labels)
         train_noisy_labels, actual_noise_rate = noisify_multiclass_symmetric(train_labels, noise_rate, random_state=0, nb_classes=nb_classes)
     if noise_type == 'No':
         train_noisy_labels = train_labels

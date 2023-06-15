@@ -22,9 +22,9 @@ def init_nets(n_parties,nets_name_list):
             net = ResNet10()
         elif net_name =='ResNet12':
             net = ResNet12()
-        elif net_name =='ShuffleNet':
+        elif net_name =='ShuffleNet':            
             net = ShuffleNetG2()
-        elif net_name =='Mobilenetv2':
+        elif net_name =='Mobilenetv2':            
             net = MobileNetV2()
         nets_list[net_i] = net
     return nets_list
